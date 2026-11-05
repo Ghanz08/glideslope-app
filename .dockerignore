@@ -1,0 +1,15 @@
+.git
+.next
+node_modules
+.env*
+!.env.example
+.remember
+coverage
+test-results
+playwright-report
+supabase/.temp
+supabase/.branches
+ocr
+deploy/*.env
+*.md
+!PRD.md

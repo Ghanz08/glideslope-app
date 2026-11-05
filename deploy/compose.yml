@@ -1,0 +1,48 @@
+# Glideslope on the VPS. Supabase runs from its own official compose (~/glideslope/supabase), bound to loopback.
+# Everything here also binds to loopback; only Caddy (profile "public") opens 80/443. Docker bypasses UFW,
+# so nothing may publish on 0.0.0.0.
+name: glideslope
+
+
+services:
+  web:
+    image: ${REGISTRY:-glideslope}/web:${TAG:-latest}
+    build: { context: .., target: web }
+    network_mode: host # reaches Supabase (127.0.0.1:8000) and OCR (127.0.0.1:8001)
+    env_file: app.env
+    environment:
+      PORT: "3000"
+      HOSTNAME: 127.0.0.1
+    restart: unless-stopped
+
+  worker:
+    image: ${REGISTRY:-glideslope}/worker:${TAG:-latest}
+    build: { context: .., target: worker }
+    network_mode: host # 9router listens on the host's 127.0.0.1:20128
+    env_file: app.env
+    restart: unless-stopped
+
+  ocr:
+    image: ${REGISTRY:-glideslope}/ocr:${TAG:-latest}
+    build: { context: ../ocr }
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      OCR_TOKEN: ${OCR_TOKEN:-}
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    profiles: [public]
+    network_mode: host
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost} # set in deploy/.env to go public
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+/* Design tokens — PRD section 4.2. The only file allowed to hold raw colour values. */
+@theme {
+  --color-latar: #f4f6f9;
+  --color-permukaan: #ffffff;
+  --color-teks: #0f1a2b;
+  --color-teks-redup: #4b586b;
+  --color-teks-pelan: #5f6b7c;
+  --color-isian: #eef1f5;
+  --color-garis: #e3e8ef;
+  --color-garis-kontrol: #7f8ca0;
+  --color-aksen: #2d5bd6;
+  --color-aksen-lembut: #e6ebfa;
+  --color-aksen-sedang: color-mix(in srgb, #2d5bd6 40%, white);
+  --color-aksen-tinggi: color-mix(in srgb, #2d5bd6 70%, white);
+  --color-masuk: #0e7a55;
+  --color-peringatan: #7d5900;
+  --color-peringatan-latar: #fbf0d2;
+  --color-galat: #ae2d49;
+  --color-galat-latar: #fbe5e9;
+  --color-scrim: rgb(15 26 43 / 0.45);
+
+  /* category tiles (background / icon) */
+  --color-makan-latar: #fdebdd;
+  --color-makan: #a24e17;
+  --color-rumah-latar: #e1f2ea;
+  --color-rumah: #1b7556;
+  --color-hiburan-latar: #f0e8fb;
+  --color-hiburan: #6f3db5;
+  --color-belanja-latar: #e3edfb;
+  --color-belanja: #2559b0;
+  --color-pendidikan-latar: #fbf0d2;
+  --color-pendidikan: #7d5900;
+  --color-netral-latar: #e6ebf2;
+  --color-netral: #3f4f66;
+  --color-kesehatan-latar: #fbe5e9;
+  --color-kesehatan: #ae2d49;
+  --color-transportasi-latar: #e0f0f4;
+  --color-transportasi: #1d6577;
+  --color-tagihan-latar: #efeaf2;
+  --color-tagihan: #69457c;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-petak-kecil: 10px;
+  --radius-petak: 12px;
+  --radius-strip: 14px;
+  --radius-kartu: 20px;
+  --radius-lembar: 28px;
+
+  --shadow-e1: 0 0 0 1px rgba(15, 26, 43, 0.04), 0 1px 2px rgba(15, 26, 43, 0.06);
+  --shadow-e2: 0 0 0 1px rgba(15, 26, 43, 0.04), 0 1px 2px rgba(15, 26, 43, 0.05), 0 6px 18px rgba(15, 26, 43, 0.06);
+  --shadow-e3: 0 0 0 1px rgba(15, 26, 43, 0.04), 0 2px 4px rgba(15, 26, 43, 0.06), 0 14px 36px rgba(15, 26, 43, 0.12);
+
+  --ease-standar: cubic-bezier(0.2, 0, 0, 1);
+  --duration-cepat: 120ms;
+  --duration-sedang: 200ms;
+  --duration-lambat: 320ms;
+
+  --z-nav: 10;
+  --z-lembar: 20;
+  --z-kunci: 40;
+  --z-toast: 50;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-latar);
+  color: var(--color-teks);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-aksen);
+  outline-offset: 2px;
+}
+
+/* Native selects and date fields: own chevron/calendar with breathing room from the edge.
+   Unlayered on purpose so it wins over per-page px-3 utilities. */
+select {
+  appearance: none;
+  padding-right: 2.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%234b586b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+select:hover,
+input[type="date"]:hover {
+  border-color: var(--color-teks-redup);
+}
+input[type="date"] {
+  padding-right: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  margin-left: 0.625rem;
+  padding: 4px;
+  border-radius: 6px;
+  opacity: 0.6;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: var(--color-isian);
+}
+
+/* Privacy toggle: inside a shell with data-privasi="on", .rahasia shows its data-mask instead of the value.
+   The real text keeps its width but is hidden from sight and from screen readers (visibility). */
+[data-privasi="on"] .rahasia {
+  position: relative;
+  visibility: hidden;
+  user-select: none;
+}
+[data-privasi="on"] .rahasia::after {
+  content: attr(data-mask);
+  visibility: visible;
+  position: absolute;
+  inset: 0 auto auto 0;
+  white-space: nowrap;
+  letter-spacing: 0.08em;
+}
+[data-privasi="on"] .rahasia-input {
+  -webkit-text-security: disc;
+}
+/* chart labels that reveal the size of the funds; .saat-privasi is the stand-in shown only while hidden */
+[data-privasi="on"] .rahasia-svg,
+.saat-privasi {
+  display: none;
+}
+[data-privasi="on"] .saat-privasi {
+  display: inline;
+}
+
+/* striped pattern for the current (unfinished) month bar — meaning is not colour-only */
+.pola-diagonal {
+  background-image: repeating-linear-gradient(135deg, var(--color-aksen-sedang) 0 4px, var(--color-aksen-lembut) 4px 8px);
+}
+
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 120ms !important;
+    transition-duration: 120ms !important;
+    transition-property: opacity !important;
+    scroll-behavior: auto !important;
+  }
+}

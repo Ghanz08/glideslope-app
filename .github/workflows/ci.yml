@@ -1,0 +1,81 @@
+# CI on every push / PR; on the default branch also build images to GHCR and deploy to the VPS.
+# Secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY (deploy key), VPS_KNOWN_HOSTS. GHCR uses the job's GITHUB_TOKEN.
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  images:
+    needs: check
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    permissions: { contents: read, packages: write }
+    strategy:
+      matrix:
+        include:
+          - { name: web, context: ., target: web }
+          - { name: worker, context: ., target: worker }
+          - { name: ocr, context: ocr, target: "" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          target: ${{ matrix.target }}
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.name }}/${{ matrix.name }}:${{ github.sha }}
+            ghcr.io/${{ steps.repo.outputs.name }}/${{ matrix.name }}:latest
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  deploy:
+    needs: images
+    # turned on with the repository variable DEPLOY_ENABLED=true once the VPS_* secrets exist
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions: { contents: read, packages: read }
+    steps:
+      - uses: actions/checkout@v4
+      - name: SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Ship code (compose, migrations, deploy script)
+        run: git archive HEAD | ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" 'mkdir -p ~/glideslope/app && tar -x -C ~/glideslope/app'
+      - name: Pull images and deploy
+        run: |
+          repo="${GITHUB_REPOSITORY,,}"
+          # the job token reaches the VPS on stdin, is used for one docker login, and expires with this job
+          printf '%s' "${{ secrets.GITHUB_TOKEN }}" | ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin >/dev/null && cd ~/glideslope/app && TAG='${{ github.sha }}' REGISTRY='ghcr.io/$repo' ./deploy/deploy.sh; docker logout ghcr.io >/dev/null"
+      - name: Smoke test
+        run: ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" 'sleep 10; curl -fsS -o /dev/null -w "masuk %{http_code}\n" http://127.0.0.1:3000/masuk && curl -fsS http://127.0.0.1:8001/health'

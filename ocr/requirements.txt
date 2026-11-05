@@ -1,0 +1,7 @@
+rapidocr==3.9.2
+onnxruntime==1.30.0
+opencv-python-headless==4.12.0.88
+numpy==2.2.6
+fastapi==0.160.0
+uvicorn==0.53.0
+python-multipart==0.0.31
