@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRupiah, formatSigned, isWholeRupiah, parseRupiah } from "./money";
+import { formatMoneyInput, formatRupiah, formatSigned, isWholeRupiah, parseRupiah } from "./money";
 import { addMonths, formatDate, monthsBetween, wibDate, wibToUtcIso } from "./dates";
 import {
   displayName, monogram, toneFor, topUpTarget,
@@ -333,5 +333,21 @@ describe("topUpTarget (F-03.3)", () => {
   it("no wallet named means no target", () => {
     expect(topUpTarget("ROHMAN GHOZALI", wallets)).toBeUndefined();
     expect(topUpTarget(null, wallets)).toBeUndefined();
+  });
+});
+
+describe("formatMoneyInput", () => {
+  it("groups thousands while typing and drops other characters", () => {
+    expect(formatMoneyInput("100000000")).toBe("100.000.000");
+    expect(formatMoneyInput("Rp 1.250.0005")).toBe("12.500.005");
+    expect(formatMoneyInput("")).toBe("");
+    expect(formatMoneyInput("abc")).toBe("");
+  });
+  it("keeps one comma and up to 4 decimals for NAV and prices", () => {
+    expect(formatMoneyInput("1523,4521", true)).toBe("1.523,4521");
+    expect(formatMoneyInput("1523,", true)).toBe("1.523,");
+    expect(formatMoneyInput(",5", true)).toBe("0,5");
+    expect(formatMoneyInput("2526000", true)).toBe("2.526.000");
+    expect(formatMoneyInput("1,23456", true)).toBe("1,2345");
   });
 });

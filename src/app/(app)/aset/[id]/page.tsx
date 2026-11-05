@@ -17,7 +17,7 @@ const TYPE: Record<string, string> = {
   equity_fund: "Reksa dana saham & campuran", stock: "Saham", gold: "Emas", crypto: "Kripto", other: "Lainnya",
 };
 const UNIT: Record<string, string> = { gold: "gram", stock: "lembar", crypto: "koin" };
-const PRICE_LABEL: Record<string, string> = { gold: "Harga per gram (Rp)", stock: "Harga per lembar (Rp)", crypto: "Harga per koin (Rp)" };
+const PRICE_LABEL: Record<string, string> = { gold: "Harga per gram", stock: "Harga per lembar", crypto: "Harga per koin" };
 
 export default async function AsetDetail({ params }: { params: Promise<{ id: string }> }) {
   const gate = await requireOwner();
@@ -76,7 +76,7 @@ export default async function AsetDetail({ params }: { params: Promise<{ id: str
           )}
           <Card>
             <h2 className="mb-3 text-[16px] font-bold">{a.type === "deposit" || a.type === "bond" ? "Ubah pokok" : "Perbarui harga"}</h2>
-            <PriceForm assetId={a.id} today={t} label={a.type === "deposit" || a.type === "bond" ? "Pokok (Rp)" : PRICE_LABEL[a.type] ?? "Harga per unit (Rp)"} />
+            <PriceForm assetId={a.id} today={t} label={a.type === "deposit" || a.type === "bond" ? "Pokok" : PRICE_LABEL[a.type] ?? "Harga per unit"} />
           </Card>
           <ActButton variant="bahaya" action={archiveAsset.bind(null, a.id)} redirectTo="/aset" done="Aset diarsipkan." confirm={{ title: "Arsipkan aset?", body: "Aset tidak lagi dihitung di dana tersisa. Riwayatnya tetap tersimpan.", verb: "Arsipkan aset" }}>Arsipkan aset</ActButton>
         </div>

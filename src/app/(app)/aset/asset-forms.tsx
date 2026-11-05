@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { redeemAsset, saveAsset, saveAssetPrice } from "@/app/actions/assets";
 import { Button, Field, inputClass, keepValues } from "@/components/ui";
 import { toast } from "@/components/toast";
+import { MoneyInput } from "@/components/money-input";
 import { digitsToAmount, formatRupiah, formatThousands } from "@/lib/core/money";
 
 type Acc = { id: string; name: string };
@@ -11,13 +12,13 @@ const num = (s: string) => Number(s.replace(/\./g, "").replace(",", "."));
 
 /** Per type: how the quantity and price are named, with a short hint where people commonly slip (lots vs shares). */
 const UNIT: Record<string, { qty: string; price: string; hint?: string }> = {
-  money_market_fund: { qty: "Jumlah unit", price: "NAV per unit (Rp)" },
-  fixed_income_fund: { qty: "Jumlah unit", price: "NAV per unit (Rp)" },
-  equity_fund: { qty: "Jumlah unit", price: "NAV per unit (Rp)" },
-  stock: { qty: "Jumlah lembar", price: "Harga per lembar (Rp)", hint: "1 lot = 100 lembar." },
-  gold: { qty: "Jumlah gram", price: "Harga per gram (Rp)" },
-  crypto: { qty: "Jumlah koin", price: "Harga per koin (Rp)" },
-  other: { qty: "Jumlah unit", price: "Harga per unit (Rp)" },
+  money_market_fund: { qty: "Jumlah unit", price: "NAV per unit" },
+  fixed_income_fund: { qty: "Jumlah unit", price: "NAV per unit" },
+  equity_fund: { qty: "Jumlah unit", price: "NAV per unit" },
+  stock: { qty: "Jumlah lembar", price: "Harga per lembar", hint: "1 lot = 100 lembar." },
+  gold: { qty: "Jumlah gram", price: "Harga per gram" },
+  crypto: { qty: "Jumlah koin", price: "Harga per koin" },
+  other: { qty: "Jumlah unit", price: "Harga per unit" },
 };
 
 export function NewAssetForm({ accounts }: { accounts: Acc[]; today?: string }) {
@@ -75,13 +76,13 @@ export function NewAssetForm({ accounts }: { accounts: Acc[]; today?: string }) 
       </Field>
       {!deposit && (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={unit.qty} name="quantity" hint={unit.hint} error={errors.quantity}><input id="quantity" name="quantity" inputMode="decimal" className={inputClass(errors.quantity)} /></Field>
-          <Field label={unit.price} name="unit_price" error={errors.unit_price}><input id="unit_price" name="unit_price" inputMode="decimal" className={inputClass(errors.unit_price)} /></Field>
+          <Field label={unit.qty} name="quantity" hint={unit.hint} error={errors.quantity}><MoneyInput id="quantity" name="quantity" decimals prefix={null} error={errors.quantity} /></Field>
+          <Field label={unit.price} name="unit_price" error={errors.unit_price}><MoneyInput id="unit_price" name="unit_price" decimals error={errors.unit_price} /></Field>
         </div>
       )}
       {deposit && (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={bond ? "Nominal pokok (Rp)" : "Pokok (Rp)"} name="unit_price" error={errors.unit_price}><input id="unit_price" name="unit_price" inputMode="numeric" className={inputClass(errors.unit_price)} /></Field>
+          <Field label={bond ? "Nominal pokok" : "Pokok"} name="unit_price" error={errors.unit_price}><MoneyInput id="unit_price" name="unit_price" error={errors.unit_price} /></Field>
           <Field label="Jatuh tempo" name="maturity_date" error={errors.maturity_date}><input id="maturity_date" name="maturity_date" type="date" className={inputClass(errors.maturity_date)} /></Field>
           <Field label={bond ? "Kupon per tahun (%)" : "Bunga per tahun (%, opsional)"} name="interest"><input id="interest" name="interest" inputMode="decimal" placeholder={bond ? "6,9" : undefined} className={inputClass()} /></Field>
           {bond && (
@@ -94,7 +95,7 @@ export function NewAssetForm({ accounts }: { accounts: Acc[]; today?: string }) 
           </Field>
         </div>
       )}
-      <Field label="Modal awal (Rp, opsional)" name="cost_basis"><input id="cost_basis" name="cost_basis" inputMode="numeric" className={inputClass()} /></Field>
+      <Field label="Modal awal (opsional)" name="cost_basis"><MoneyInput id="cost_basis" name="cost_basis" /></Field>
       <Field label="Dibeli dari akun (opsional)" name="funded_from" hint="Bila diisi, saldo akun berkurang sebagai pembelian aset, bukan pengeluaran.">
         <select id="funded_from" name="funded_from" className={inputClass()}><option value="">Sudah dimiliki sebelumnya</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
       </Field>
@@ -118,7 +119,7 @@ export function PriceForm({ assetId, today, label }: { assetId: string; today: s
     }))}>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Tanggal" name="as_of" error={errors.as_of}><input id="as_of" name="as_of" type="date" defaultValue={today} max={today} className={inputClass(errors.as_of)} /></Field>
-        <Field label={label} name="unit_price" error={errors.unit_price}><input id="unit_price" name="unit_price" inputMode="decimal" className={inputClass(errors.unit_price)} /></Field>
+        <Field label={label} name="unit_price" error={errors.unit_price}><MoneyInput id="unit_price" name="unit_price" decimals error={errors.unit_price} /></Field>
       </div>
       <Button type="submit" variant="lembut" disabled={pending}>Simpan harga</Button>
     </form>
@@ -145,7 +146,7 @@ export function RedeemForm({ assetId, value, accounts, defaultAccount, today }: 
         <Field label="Ke akun" name="account"><select id="account" name="account" defaultValue={defaultAccount ?? accounts[0]?.id} className={inputClass()}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>
         <Field label="Tanggal" name="on" error={errors.occurred_on}><input id="on" name="on" type="date" defaultValue={today} max={today} className={inputClass(errors.occurred_on)} /></Field>
       </div>
-      <Field label="Biaya (Rp)" name="fee" error={errors.fee}><input id="fee" inputMode="numeric" value={fee} onChange={(e) => setFee(e.target.value ? formatThousands(digitsToAmount(e.target.value)) : "")} placeholder="0" className={`${inputClass(errors.fee)} tabular`} /></Field>
+      <Field label="Biaya" name="fee" error={errors.fee}><input id="fee" inputMode="numeric" value={fee} onChange={(e) => setFee(e.target.value ? formatThousands(digitsToAmount(e.target.value)) : "")} placeholder="0" className={`${inputClass(errors.fee)} tabular`} /></Field>
       <p className="text-[13px] text-teks-redup">Pencairan tercatat sebagai transfer ke rekening, bukan pemasukan, dan nilai asetnya ikut berkurang.</p>
       {errors._ && <p role="alert" className="text-[14px] text-galat">{errors._}</p>}
       <Button type="submit" disabled={pending}>Cairkan</Button>

@@ -79,3 +79,18 @@ export function digitsToAmount(text: string): number {
 export function isWholeRupiah(text: string): boolean {
   return /^\s*[0-9][0-9.]*\s*$/.test(text) && !/\.\d{1,2}$/.test(text.trim());
 }
+
+/**
+ * What a money field shows while typing: "100000000" → "100.000.000". With `decimals` (NAV, price per gram) one comma
+ * is kept with up to 4 digits after it: "1523,4521" → "1.523,4521". Anything else typed is dropped.
+ */
+export function formatMoneyInput(raw: string, decimals = false): string {
+  if (!decimals) {
+    const n = digitsToAmount(raw);
+    return n ? formatThousands(n) : "";
+  }
+  const [intPart, ...rest] = raw.replace(/\./g, "").replace(/[^\d,]/g, "").split(",");
+  const int = intPart.replace(/^0+(?=\d)/, "");
+  const head = int ? formatThousands(Number(int)) : rest.length ? "0" : "";
+  return rest.length ? `${head},${rest.join("").slice(0, 4)}` : head;
+}
